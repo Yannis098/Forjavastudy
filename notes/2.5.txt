@@ -1,0 +1,117 @@
+关于this关键字：
+
+假设有同一类型的两个对象，a和b。这个对象内部有一个peel（）方法。
+
+class Banana{
+void peel(int i){/*......*/}
+
+}
+
+当你用a.peel()和b.peel()调用这个方法的时候，编译器是如何知道是被a还是b调用的呢？
+
+实际上这个功能的实现是靠编辑器在暗中将所操作对象的引用传递给了peel()方法。它看起来是这样的Banana.peel(a,1);
+
+如果你希望在类的内部获得对当前对象的引用，可以用到this关键字。
+
+当然还有别的用法，比如说返回当前对象的引用
+
+public class Leaf {
+  int i = 0;
+  Leaf increment() {
+    i++;
+    return this;
+  }
+  void print() {
+    System.out.println("i = " + i);
+  }
+  public static void main(String[] args) {
+    Leaf x = new Leaf();
+    x.increment().increment().increment().print();
+  }
+} /* Output:
+i = 3*/
+
+
+this关键字还可以用于将当前对象传递给其它方法使用：
+
+如下代码，这里实际上也是返回当前对象的引用，相当于在传递使用权限
+
+
+class Person {
+  public void eat(Apple apple) {
+    Apple peeled = apple.getPeeled();
+    System.out.println("Yummy");
+  }
+}
+
+class Peeler {
+  static Apple peel(Apple apple) {
+    // ... remove peel
+    return apple; // Peeled
+  }
+}
+
+class Apple {
+  Apple getPeeled() { return Peeler.peel(this); }
+}
+
+public class PassingThis {
+  public static void main(String[] args) {
+    new Person().eat(new Apple());
+  }
+} /* Output:
+Yummy
+*/
+
+this关键字的其它用法：在构造器中调用构造器
+
+假设一种情况，你写了很多种构造器，你想在一个构造器中调用另外一个构造器，以避免代码重复，这时候可以使用this 关键字
+
+比如：
+public class Flower {
+  int petalCount = 0;
+  String s = "initial value";
+  Flower(int petals) {
+    petalCount = petals;
+    print("Constructor w/ int arg only, petalCount= "
+      + petalCount);
+  }
+  Flower(String ss) {
+    print("Constructor w/ String arg only, s = " + ss);
+    s = ss;
+  }
+  Flower(String s, int petals) {
+    this(petals);
+//!    this(s); // Can't call two!
+    this.s = s; // Another use of "this"
+    print("String & int args");
+  }
+  Flower() {
+    this("hi", 47);
+    print("default constructor (no args)");
+  }
+  void printPetalCount() {
+//! this(11); // Not inside non-constructor!
+    print("petalCount = " + petalCount + " s = "+ s);
+  }
+  public static void main(String[] args) {
+    Flower x = new Flower();
+    x.printPetalCount();
+  }
+} /* Output:
+Constructor w/ int arg only, petalCount= 47
+String & int args
+default constructor (no args)
+petalCount = 47 s = hi
+*///:~
+
+
+注意这里面代码实际还隐含了this的一个用法
+ Flower(String s, int petals) {
+    this(petals);
+//!    this(s); // Can't call two!
+    this.s = s; // Another use of "this"
+    print("String & int args");
+  }
+这里参数s和数据成员s名字相同  用this.s避免歧义的产生
+而且在用this调用构造器的时候 最好把构造器写在开头 并且不能在一个构造器里面用this调用两次构造器。
