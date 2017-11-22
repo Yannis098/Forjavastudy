@@ -1,0 +1,57 @@
+可变参数列表
+
+可变参数：适用于参数个数不确定，类型确定的情况，java把可变参数当做数组处理。
+
+注意：可变参数必须位于最后一项。当可变参数个数多余一个时，必将有一个不是最后一项，所以只支持有一个可变参数。
+
+在不支持可变参数列表之前，实现的方法就是创建一个Object[]的数组，然后将你的不确定的参数填进去。 
+
+因为所有的object都可以被看作是Object类对象，所以这是可行的。
+
+代码：
+class A {}
+
+public class VarArgs {
+  static void printArray(Object[] args) {
+    for(Object obj : args)
+      System.out.print(obj + " ");
+    System.out.println();
+  }
+  public static void main(String[] args) {
+    printArray(new Object[]{
+      new Integer(47), new Float(3.14), new Double(11.11)
+    });
+    printArray(new Object[]{"one", "two", "three" });
+    printArray(new Object[]{new A(), new A(), new A()});
+  }
+} /* Output: (Sample)
+47 3.14 11.11
+one two three
+A@1a46e30 A@3e25a5 A@19821f
+*///:~
+
+注意 此时需要手动创建数组去填充已有的Object[] args 数组
+
+在Java支持可变参数列表之后  变得方便了很多
+
+public class OptionalTrailingArguments {
+  static void f(int required, String... trailing) {
+    System.out.print("required: " + required + " ");
+    for(String s : trailing)
+      System.out.print(s + " ");
+    System.out.println();
+  }
+  public static void main(String[] args) {
+    f(1, "one");
+    f(2, "two", "three");
+    f(0);
+  }
+} /* Output:
+required: 1 one
+required: 2 two three
+required: 0
+*///:~
+
+这里不需要再人为的自己创建数组去填充，当你指定参数的时候，编辑器实际上会自动的为你去填充数组，你所获取的依旧是数组，但只是语法方面更加方便和清晰。
+
+并且将0个参数传递给可变参数列表是可行的。 可变参数列表可以接收任意的参数，可以是基础类型。

@@ -1,0 +1,77 @@
+java中的垃圾回收制度：
+
+在java中，提供finalize()方法，一旦垃圾回收器准备释放对象占用的储存空间的时候，将首先调用其finalize()方法，并且在下一次垃圾回收动作发生的时候，
+
+才会真正回收对象占用的内存。
+
+这里首先介绍一下垃圾回收器的工作原理：只有当JVM的内存不足的时候，垃圾回收器才会被主动运行，来释放那些被java认定不会再被使用的对象的内存。
+
+那么java是如何判断一个对象不再被使用的呢：
+
+1、  引用计数法
+这个比较常用，思路为：为对象添加一个引用计数器，每当有一个地方引用它时，
+
+计数器值就加1；档引用失效时，计数器值就减1；任何时刻计数器都为0的对象就是不可能再被使用的。
+
+引用计数算法实现简单，判定效率也高，也有一些使用案例，但是Java语言中并没有使用引用计数法来管理内存。
+
+其中最主要的原因是它很难解决对象之间的相互引用问题。
+
+举个例子：对象objA和对象objB都有字段instance，赋值令objA.instance=objB及objB.instance=objA，
+
+除此之外，这两个对象再无任何引用，当令objA=null,objB=null时，这两个对象已经不可能再被访问，但是它们还相互引用着对方，
+
+导致它们的引用计数不为0，于是引用计数算法无法通知GC收集器回收它们。
+2、  根搜索算法
+在主流的商用程序语言中（Java和C#,甚至包括前面提到的古老的Lisp），
+
+都是使用根搜素算法（GCRoots Tracing）判定对象是否存活，
+
+这个算法的基本思路就是通过一系列的名为“GC Roots”的对象作为起始点，
+
+从这些节点开始向下搜索，搜索所走过的路径称为引用链（Reference Chain），
+
+当从一个对象到GC Roots没有任何引用链相连（用图论的话来说就是从GC Roots到这个对象不可达）时，
+
+则证明此对象是不可用的。
+
+其作用：（1）如果你没有通过new()方法来在堆中创建对象，那么垃圾回收器就不会知道该如何的去清除这个对象所占用的内存空间。
+
+在这时，你需要手动的写一个finalize()方法去释放该内存空间。
+
+（2）对象终结条件的验证：当对某个对象不在感兴趣的时候，这个对象应该处于某种状态，使得它可以被安全的释放掉内存。
+
+如果对象不处于这个状态，可以通过合理使用finalize()方法来检测。如下代码:
+class Book {
+  boolean checkedOut = false;
+  Book(boolean checkOut) {
+    checkedOut = checkOut;
+  }
+  void checkIn() {
+    checkedOut = false;
+  }
+  protected void finalize() {
+    if(checkedOut)
+      System.out.println("Error: checked out");
+    // Normally, you'll also do this:
+    // super.finalize(); // Call the base-class version
+  }
+}
+
+public class TerminationCondition {
+  public static void main(String[] args) {
+    Book novel = new Book(true);
+    // Proper cleanup:
+    novel.checkIn();
+    // Drop the reference, forget to clean up:
+    new Book(true);
+    // Force garbage collection & finalization:
+    System.gc();
+  }
+} /* Output:
+Error: checked out
+*///:~
+
+本例的终结条件是所有的Book对象在被回收的时候都应该被签入，但在main()方法中，由于程序员的错误导致有一本书未被签入，这样通过执行finalize就发现了
+
+这个错误。
